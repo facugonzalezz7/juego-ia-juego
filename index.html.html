@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUMANO VS IA: El Desafío</title>
+    <style>
+        :root {
+            --bg: #0b1120; 
+            --surface: rgba(30, 41, 59, 0.7); 
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --primary: #38bdf8; 
+            --ia-color: #f43f5e; 
+            --human-color: #10b981;
+            --finance-color: #fbbf24; 
+            --climate-color: #c084fc;
+        }
+        body {
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            background: radial-gradient(circle at 50% -20%, #1e3a8a 0%, #0b1120 80%);
+        }
+        #app {
+            width: 95%; max-width: 900px; 
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            padding: 40px; border-radius: 16px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            text-align: center; position: relative;
+            transition: opacity 0.4s ease;
+        }
+        h1 { color: var(--primary); font-size: 2.6rem; margin-bottom: 10px; user-select: none; text-shadow: 0 0 20px rgba(56, 189, 248, 0.4); text-transform: uppercase; letter-spacing: 2px; }
+        .context-box {
+            background: rgba(15, 23, 42, 0.6); padding: 20px; border-left: 5px solid var(--primary);
+            border-radius: 8px; text-align: left; margin-bottom: 25px; line-height: 1.6;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #round-indicator {
+            position: absolute; top: 20px; right: 30px;
+            background: rgba(56, 189, 248, 0.2); color: var(--primary);
+            padding: 8px 15px; border-radius: 20px; font-weight: bold; border: 1px solid var(--primary);
+        }
+        input[type="text"] {
+            width: 80%; max-width: 400px; padding: 15px; border-radius: 8px;
+            border: 2px solid rgba(71, 85, 105, 0.5); background: rgba(15, 23, 42, 0.8); color: white;
+            font-size: 1.2rem; margin-bottom: 20px; text-align: center; transition: 0.3s;
+        }
+        input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+        .btn {
+            background: rgba(51, 65, 85, 0.6); color: white; border: 1px solid var(--surface-border);
+            padding: 18px 25px; font-size: 1.1rem; border-radius: 10px; cursor: pointer;
+            width: 100%; margin-bottom: 15px; text-align: left; display: flex; flex-direction: column; gap: 5px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background: rgba(71, 85, 105, 0.8); border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-start {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; font-weight: bold;
+            text-align: center; font-size: 1.3rem; margin-top: 10px; width: auto; padding: 15px 40px;
+            border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 15px 35px rgba(37, 99, 235, 0.6); }
+        .timer-container {
+            margin: 25px 0; background: rgba(15, 23, 42, 0.8); border-radius: 20px;
+            height: 25px; width: 100%; position: relative; overflow: hidden; border: 1px solid var(--surface-border);
+        }
+        #timer-bar { height: 100%; width: 100%; background: var(--human-color); transition: width 1s linear, background-color 0.3s; box-shadow: 0 0 15px var(--human-color); }
+        #timer-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 25px; text-align: left; }
+        .card { padding: 25px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); }
+        .card-ia { border-top: 4px solid var(--ia-color); box-shadow: 0 10px 30px rgba(244, 63, 94, 0.15); }
+        .card-human { border-top: 4px solid var(--human-color); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15); }
+        
+        .metric-group { margin-top: 20px; }
+        .metric-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
+        .metric-bar-bg { background: rgba(255, 255, 255, 0.1); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
+        .metric-bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .feedback-box {
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 8px; padding: 20px; text-align: left; margin-top: 20px; font-size: 1.1rem; line-height: 1.5;
+        }
+        
+        .ia-warning {
+            font-size: 0.9rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); 
+            padding-top: 15px; margin-top: 20px; font-style: italic; text-align: center;
+        }
+
+        .hidden { display: none !important; }
+        .loader {
+            border: 5px solid rgba(255,255,255,0.1); border-top: 5px solid var(--ia-color);
+            border-radius: 50%; width: 70px; height: 70px; animation: spin 1s linear infinite; margin: 40px auto;
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- PANTALLA 1: INICIO -->
+    <div id="screen-intro">
+        <h1 ondblclick="exportData()">⚔️ HUMANO VS IA: El Desafío</h1>
+        <p style="color: #94a3b8; font-size: 1.2rem; margin-bottom: 30px;">
+            Enfrentarás <strong>2 escenarios críticos</strong> de gestión empresarial.<br>
+            Al finalizar, evaluaremos tu racionalidad directiva frente al algoritmo de la IA.
+        </p>
+        <input type="text" id="player-name" placeholder="Ingresá tu nombre o apodo..." autocomplete="off">
+        <br>
+        <button class="btn-start" onclick="startGame()">Comenzar Análisis</button>
+        <p style="font-size: 0.8rem; color: #475569; margin-top: 40px;">*Doble clic en el título para exportar la base de datos offline.</p>
+    </div>
+
+    <!-- PANTALLA 2: JUEGO -->
+    <div id="screen-game" class="hidden">
+        <div id="round-indicator">Ronda 1 / 2</div>
+        <h2 id="scenario-title" style="color: var(--primary); text-align: left;">Caso Práctico</h2>
+        <div class="context-box" id="scenario-context">Cargando contexto...</div>
+        <div class="timer-container">
+            <div id="timer-bar"></div>
+            <div id="timer-text">60s</div>
+        </div>
+        <div id="options-container"></div>
+    </div>
+
+    <!-- PANTALLA 3: PROCESANDO -->
+    <div id="screen-processing" class="hidden">
+        <h2 style="color: var(--ia-color);">Algoritmo en Ejecución...</h2>
+        <p style="color: #cbd5e1;">Evaluando matrices de probabilidad y calculando ROI de corto plazo.</p>
+        <div class="loader"></div>
+    </div>
+
+    <!-- PANTALLA 4: RESULTADOS FINALES -->
+    <div id="screen-results" class="hidden">
+        <h1 style="font-size: 2rem;">Evaluación de Liderazgo</h1>
+        
+        <div class="feedback-box" id="qualitative-feedback"></div>
+
+        <div class="results-grid">
+            <div class="card card-human">
+                <h3 style="color: var(--human-color); margin-top:0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                    Tu Perfil de Gestión
+                </h3>
+                <div class="metric-group">
+                    <div class="metric-label">
+                        <span style="color: var(--finance-color);">Eficiencia Financiera Promedio</span>
+                        <span id="human-finance-val">0%</span>
+                    </div>
+                    <div class="metric-bar-bg"><div id="human-finance-bar" class="metric-bar-fill" style="background: var(--finance-color);"></div></div>
+                    <div class="metric-label">
+                        <span style="color: var(--climate-color);">Impacto Social y Ético Promedio</span>
+                        <span id="human-climate-val">0%</span>
+                    </div>
+                    <div class="metric-bar-bg"><div id="human-climate-bar" class="metric-bar-fill" style="background: var(--climate-color);"></div></div>
+                </div>
+            </div>
+            
+            <div class="card card-ia">
+                <h3 style="color: var(--ia-color); margin-top:0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                    Decisiones Algorítmicas (IA)
+                </h3>
+                <div class="metric-group">
+                    <div class="metric-label">
+                        <span style="color: var(--finance-color);">Eficiencia Financiera Promedio</span>
+                        <span id="ia-finance-val">0%</span>
+                    </div>
+                    <div class="metric-bar-bg"><div id="ia-finance-bar" class="metric-bar-fill" style="background: var(--finance-color);"></div></div>
+                    <div class="metric-label">
+                        <span style="color: var(--climate-color);">Impacto Social y Ético Promedio</span>
+                        <span id="ia-climate-val">0%</span>
+                    </div>
+                    <div class="metric-bar-bg"><div id="ia-climate-bar" class="metric-bar-fill" style="background: var(--climate-color);"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ia-warning">
+            * <strong>Sesgo Algorítmico Detectado:</strong> La Inteligencia Artificial priorizó invariablemente los resultados financieros, demostrando una ceguera ética frente a los daños colaterales humanos, ambientales y sociales.
+        </div>
+
+        <button class="btn-start" style="margin-top: 30px;" onclick="resetGame()">EVALUAR NUEVO PARTICIPANTE</button>
+    </div>
+</div>
+
+<script>
+    const TIME_LIMIT = 60;
+    const MAX_ROUNDS = 2;
+    
+    let timerValue = TIME_LIMIT;
+    let timerInterval;
+    let currentPlayer = "";
+    
+    let currentRound = 1;
+    let selectedScenarios = [];
+    
+    let userChoices = [];
+    let iaChoices = [];
+    let userTimes = [];
+
+    // Base de datos de 20 escenarios
+    const scenarios = [
+        {
+            id: "S1-Automatizacion", title: "Caso 1: Reestructuración por Automatización",
+            context: "La empresa debe reducir costos o quebrar. Existe un software de IA que puede reemplazar al 40% del personal administrativo inmediatamente.",
+            options: [
+                { title: "A) Automatización Agresiva", desc: "Despedir al 40% e instalar el software hoy.", finance: 95, climate: 10, isBalanced: false },
+                { title: "B) Transición Justa", desc: "Instalar el software, frenar despidos y reubicar al personal en nuevas áreas.", finance: 50, climate: 85, isBalanced: true },
+                { title: "C) Rechazo Tecnológico", desc: "Prohibir el software para proteger el empleo, asumiendo pérdidas.", finance: 15, climate: 60, isBalanced: false }
+            ]
+        },
+        {
+            id: "S2-Proveedores", title: "Caso 2: Cadena de Suministro Local",
+            context: "Tu proveedor local subió precios. Podés importar de Asia, pero destruirías 50 empleos indirectos en la región.",
+            options: [
+                { title: "A) Importación Total", desc: "Romper contrato local e importar el 100% de Asia. Maximiza margen.", finance: 90, climate: 15, isBalanced: false },
+                { title: "B) Cuota Mixta Solidaria", desc: "Importar un 40% para estabilizar costos y ayudar al local a modernizarse.", finance: 65, climate: 75, isBalanced: true },
+                { title: "C) Absorción de Costos", desc: "Mantener 100% local, no subir precios y entrar en margen financiero negativo.", finance: 10, climate: 50, isBalanced: false }
+            ]
+        },
+        {
+            id: "S3-Software", title: "Caso 3: Ética y Privacidad de Datos",
+            context: "Faltan 2 días para lanzar la nueva App. Se detecta un fallo que podría exponer datos de clientes, pero los inversores exigen salir ya.",
+            options: [
+                { title: "A) Lanzar y Parchear", desc: "Lanzar en fecha para contentar inversores y arreglarlo en secreto luego.", finance: 85, climate: 10, isBalanced: false },
+                { title: "B) Transparencia y Retraso", desc: "Comunicar la falla, retrasar el lanzamiento y compensar a los desarrolladores.", finance: 40, climate: 90, isBalanced: true },
+                { title: "C) Cancelación", desc: "Suspender todo indefinidamente hasta rehacer el código desde cero.", finance: 5, climate: 30, isBalanced: false }
+            ]
+        },
+        {
+            id: "S4-Ecologia", title: "Caso 4: Impacto Ambiental y Multas",
+            context: "Tu fábrica vierte residuos legales pero nocivos. Cambiar la maquinaria cuesta 1 millón. La multa municipal es de apenas 100 mil.",
+            options: [
+                { title: "A) Asumir la Multa", desc: "Ignorar la maquinaria y pagar la multa si llega. Sale 10 veces más barato.", finance: 95, climate: 5, isBalanced: false },
+                { title: "B) Inversión Verde", desc: "Comprar la maquinaria a crédito y lanzar campaña de sostenibilidad.", finance: 55, climate: 95, isBalanced: true },
+                { title: "C) Cerrar Planta Temporal", desc: "Frenar la producción un mes para limpiar manualmente.", finance: 15, climate: 40, isBalanced: false }
+            ]
+        },
+        {
+            id: "S5-Huelga", title: "Caso 5: Conflicto Gremial",
+            context: "El sindicato bloqueó la entrada pidiendo 30% de aumento. La IA sugiere contratar logística tercerizada para saltar el bloqueo.",
+            options: [
+                { title: "A) Romper la Huelga", desc: "Contratar terceros, saltar el bloqueo y amenazar con despidos.", finance: 80, climate: 10, isBalanced: false },
+                { title: "B) Mesa de Negociación", desc: "Ceder un 15% de aumento más bonos por objetivos futuros.", finance: 50, climate: 80, isBalanced: true },
+                { title: "C) Aceptar Todo", desc: "Aceptar el 30% obligando a pedir un salvataje bancario.", finance: 10, climate: 60, isBalanced: false }
+            ]
+        },
+        {
+            id: "S6-Algoritmo", title: "Caso 6: Precios Dinámicos en Crisis",
+            context: "Una tormenta inundó la ciudad. Tu software automatizado detectó la crisis y subió el precio del agua embotellada un 400%.",
+            options: [
+                { title: "A) Dejar Actuar al Sistema", desc: "Aprovechar la demanda temporal para inflar las ganancias trimestrales.", finance: 100, climate: 5, isBalanced: false },
+                { title: "B) Precios Solidarios", desc: "Desactivar la IA, congelar precios e incluso donar parte del stock.", finance: 40, climate: 95, isBalanced: true },
+                { title: "C) Cierre por Miedo", desc: "Cerrar las sucursales hasta que pase la tormenta para evitar críticas.", finance: 20, climate: 30, isBalanced: false }
+            ]
+        },
+        {
+            id: "S7-Inclusion", title: "Caso 7: Filtrado de Currículums",
+            context: "La IA que filtra CVs descarta automáticamente a madres solteras y perfiles de barrios populares porque 'estadísticamente rotan más'.",
+            options: [
+                { title: "A) Usar IA (Rapidez)", desc: "Confiar en el algoritmo. Reduce costos y el tiempo de contratación a 24 horas.", finance: 90, climate: 10, isBalanced: false },
+                { title: "B) Auditar y Corregir", desc: "Auditar los sesgos del algoritmo y hacer entrevistas humanas mixtas.", finance: 45, climate: 90, isBalanced: true },
+                { title: "C) Contratación Aleatoria", desc: "Ignorar currículums y contratar al azar a los que están en la puerta.", finance: 5, climate: 20, isBalanced: false }
+            ]
+        },
+        {
+            id: "S8-Seguridad", title: "Caso 8: Mantenimiento Preventivo",
+            context: "Las máquinas vibran extraño. Pararlas pierde 1 contrato clave. La IA indica que hay 80% de chance de que no se rompan este mes.",
+            options: [
+                { title: "A) Arriesgar y Seguir", desc: "Continuar la producción confiando en el 80% para asegurar el contrato.", finance: 85, climate: 25, isBalanced: false },
+                { title: "B) Parada Controlada", desc: "Avisar al cliente del retraso, parar e inspeccionar para cuidar operarios.", finance: 45, climate: 85, isBalanced: true },
+                { title: "C) Cambiar Máquinas", desc: "Tirar la línea entera y comprar nuevas hoy sin presupuesto.", finance: 5, climate: 50, isBalanced: false }
+            ]
+        },
+        {
+            id: "S9-Marketing", title: "Caso 9: Publicidad Agresiva",
+            context: "Marketing creó una campaña que explota inseguridades corporales de adolescentes. Los tests muestran que disparará las ventas un 50%.",
+            options: [
+                { title: "A) Lanzar Campaña", desc: "Aprobarla inmediatamente. Maximiza ventas y posicionamiento.", finance: 95, climate: 5, isBalanced: false },
+                { title: "B) Rehacer con Ética", desc: "Frenar la campaña y crear publicidad basada en empoderamiento.", finance: 35, climate: 90, isBalanced: true },
+                { title: "C) Despedir al Equipo", desc: "Despedir a marketing por falta de moral y no vender nada este mes.", finance: 10, climate: 40, isBalanced: false }
+            ]
+        },
+        {
+            id: "S10-Datos", title: "Caso 10: Venta de Base de Datos",
+            context: "Un broker de seguros te ofrece una fortuna por la base de datos confidencial de clientes. Venderla salvaría los bonos de tus empleados.",
+            options: [
+                { title: "A) Vender en Secreto", desc: "Vender la data, repartir bonos y mejorar el flujo de caja.", finance: 90, climate: 20, isBalanced: false },
+                { title: "B) Transparencia", desc: "Rechazar, explicar a empleados que no habrá bono y buscar vías legales.", finance: 40, climate: 80, isBalanced: true },
+                { title: "C) Renunciar", desc: "Renunciar por estrés moral, dejando la empresa a la deriva.", finance: 10, climate: 10, isBalanced: false }
+            ]
+        },
+        {
+            id: "S11-Burnout", title: "Caso 11: Burnout y Horas Extra",
+            context: "Aumento repentino de demanda. La IA recomienda turnos rotativos de 14 horas continuas para cumplir los pedidos de este mes.",
+            options: [
+                { title: "A) Explotación Autorizada", desc: "Aprobar turnos de 14hs. Cumple la cuota mensual perfecta, pero agota a la plantilla.", finance: 95, climate: 5, isBalanced: false },
+                { title: "B) Refuerzos Temporales", desc: "Contratar temporales locales y dar turnos de 8hs. Cuesta más, pero cuida la salud.", finance: 50, climate: 90, isBalanced: true },
+                { title: "C) Rechazar Clientes", desc: "Rechazar los pedidos extra para no estresar al equipo, perdiendo clientes clave.", finance: 10, climate: 60, isBalanced: false }
+            ]
+        },
+        {
+            id: "S12-Calidad", title: "Caso 12: Calidad Alimentaria",
+            context: "Los costos subieron. La IA sugiere usar un conservante sintético más barato que es legal pero altera el valor nutricional.",
+            options: [
+                { title: "A) Bajar Calidad", desc: "Usar el sintético. Salva el margen de ganancia sin avisar al consumidor.", finance: 90, climate: 15, isBalanced: false },
+                { title: "B) Sinceramiento", desc: "Mantener calidad, reducir el empaque y transparentar la situación en redes.", finance: 60, climate: 85, isBalanced: true },
+                { title: "C) Asumir Pérdidas", desc: "Asumir las pérdidas totales sin cambiar nada ni subir el precio.", finance: 5, climate: 50, isBalanced: false }
+            ]
+        },
+        {
+            id: "S13-Dumping", title: "Caso 13: Competencia Desleal",
+            context: "Un competidor barrial está ganando cuota. La IA recomienda vender a pérdida 3 meses para quebrarlo y luego subir los precios.",
+            options: [
+                { title: "A) Aplicar Dumping", desc: "Vender a pérdida. Elimina al competidor y asegura el monopolio local a futuro.", finance: 100, climate: 5, isBalanced: false },
+                { title: "B) Competencia Leal", desc: "Mejorar nuestro servicio de atención y fidelización para competir genuinamente.", finance: 50, climate: 80, isBalanced: true },
+                { title: "C) Subsidiar Rival", desc: "Subsidiar al competidor barrial para que no cierre, perdiendo liquidez.", finance: 10, climate: 20, isBalanced: false }
+            ]
+        },
+        {
+            id: "S14-Offshoring", title: "Caso 14: Offshoring de Servicios",
+            context: "Atención al cliente cuesta mucho. La IA sugiere tercerizar todo a un call center precario en el exterior y despedir al equipo local.",
+            options: [
+                { title: "A) Tercerización Total", desc: "Tercerizar inmediatamente. Reduce el costo operativo de la empresa un 70%.", finance: 95, climate: 10, isBalanced: false },
+                { title: "B) Automatización Mixta", desc: "Usar un bot para consultas simples, pero mantener al equipo local para casos complejos.", finance: 65, climate: 75, isBalanced: true },
+                { title: "C) Aumento Sueldos", desc: "Prohibir la tercerización y subir los sueldos del call center un 50% por inflación.", finance: 5, climate: 60, isBalanced: false }
+            ]
+        },
+        {
+            id: "S15-Transparencia", title: "Caso 15: Defecto Oculto de Producto",
+            context: "Un lote de productos tiene un fallo estético. La IA calcula que solo el 5% se quejará, recomendando callar y reembolsar solo reclamos.",
+            options: [
+                { title: "A) Silencio Algorítmico", desc: "Seguir el cálculo. Vender todo el lote normal y gestionar las quejas aisladas.", finance: 85, climate: 20, isBalanced: false },
+                { title: "B) Honestidad Comercial", desc: "Avisar del defecto estético y ofrecer el lote con un 30% de descuento general.", finance: 45, climate: 85, isBalanced: true },
+                { title: "C) Retiro Masivo", desc: "Destruir el lote completo y pedir perdón públicamente, perdiendo lo invertido.", finance: 10, climate: 40, isBalanced: false }
+            ]
+        },
+        {
+            id: "S16-BrechaSalarial", title: "Caso 16: Brecha Salarial Estructural",
+            context: "La IA de RRHH detectó que las mujeres de la empresa aceptan salarios un 20% menores que los hombres al ser contratadas, ahorrando fondos.",
+            options: [
+                { title: "A) Aprovechar la Brecha", desc: "Mantener salarios desiguales dictados por el mercado para maximizar el margen.", finance: 90, climate: 10, isBalanced: false },
+                { title: "B) Equidad Interna", desc: "Ignorar a la IA, nivelar los sueldos por puesto y transparentar escalas.", finance: 45, climate: 90, isBalanced: true },
+                { title: "C) Compensación", desc: "Subir el sueldo de las mujeres al doble que los hombres para compensar el daño histórico.", finance: 10, climate: 30, isBalanced: false }
+            ]
+        },
+        {
+            id: "S17-Obsolescencia", title: "Caso 17: Obsolescencia Programada",
+            context: "Diseñaron un producto que dura 10 años. La IA sugiere usar un componente más barato que fallará a los 3 años para forzar la recompra.",
+            options: [
+                { title: "A) Reducir Vida Útil", desc: "Usar la pieza barata. Triplica las ventas a mediano plazo y baja el costo.", finance: 95, climate: 10, isBalanced: false },
+                { title: "B) Calidad Sostenible", desc: "Mantener la pieza de 10 años, subir levemente el precio y ofrecer reparaciones.", finance: 55, climate: 85, isBalanced: true },
+                { title: "C) Garantía Vitalicia", desc: "Vender al costo con garantía de por vida, anulando las ganancias futuras.", finance: 5, climate: 40, isBalanced: false }
+            ]
+        },
+        {
+            id: "S18-TrabajoInfantil", title: "Caso 18: Proveedor Sospechoso",
+            context: "Tu proveedor más rentable terceriza producción. La IA predice con 85% de probabilidad que usan trabajo infantil en sus talleres clandestinos.",
+            options: [
+                { title: "A) Ignorar Predicción", desc: "No hay pruebas legales directas. Seguir comprando para mantener el margen intacto.", finance: 95, climate: 5, isBalanced: false },
+                { title: "B) Auditoría y Transición", desc: "Suspender compras y auditar al proveedor, asumiendo sobrecostos transitorios.", finance: 40, climate: 90, isBalanced: true },
+                { title: "C) Denuncia Inmediata", desc: "Cortar el contrato hoy, denunciarlos y paralizar tu producción un mes completo.", finance: 15, climate: 50, isBalanced: false }
+            ]
+        },
+        {
+            id: "S19-Adiccion", title: "Caso 19: Retención de Usuarios",
+            context: "La nueva actualización de tu app usa un algoritmo que genera picos de dopamina. Aumentará el tiempo de uso diario de 1 a 4 horas en adolescentes.",
+            options: [
+                { title: "A) Maximizar Engagement", desc: "Lanzar el algoritmo. A más tiempo en pantalla, más ingresos por publicidad.", finance: 100, climate: 10, isBalanced: false },
+                { title: "B) Bienestar Digital", desc: "Limitar notificaciones, agregar alertas de tiempo y priorizar uso consciente.", finance: 45, climate: 85, isBalanced: true },
+                { title: "C) Cerrar la App", desc: "Dar de baja la aplicación por miedo a demandas sobre salud mental.", finance: 5, climate: 20, isBalanced: false }
+            ]
+        },
+        {
+            id: "S20-Edad", title: "Caso 20: Discriminación por Edad",
+            context: "Hay que reducir personal. La IA recomienda despedir exclusivamente a los mayores de 55 años porque 'su costo de salud es estadísticamente mayor'.",
+            options: [
+                { title: "A) Seguir Algoritmo", desc: "Despedir a los mayores de 55. Reduce el gasto social y renueva la plantilla.", finance: 90, climate: 15, isBalanced: false },
+                { title: "B) Reestructuración Justa", desc: "Ignorar la edad. Analizar el desempeño y ofrecer retiros voluntarios.", finance: 40, climate: 85, isBalanced: true },
+                { title: "C) Subsidiar Edad", desc: "Prohibir despidos de mayores y duplicar sus días de vacaciones por prevención.", finance: 10, climate: 40, isBalanced: false }
+            ]
+        }
+    ];
+
+    function startGame() {
+        currentPlayer = document.getElementById('player-name').value.trim();
+        if (!currentPlayer) {
+            alert("Por favor, ingresá un nombre para iniciar.");
+            return;
+        }
+
+        let shuffled = [...scenarios].sort(() => 0.5 - Math.random());
+        selectedScenarios = [shuffled[0], shuffled[1]];
+        
+        currentRound = 1;
+        userChoices = [];
+        iaChoices = [];
+        userTimes = [];
+
+        document.getElementById('screen-intro').classList.add('hidden');
+        loadRound();
+    }
+
+    function loadRound() {
+        let scenario = selectedScenarios[currentRound - 1];
+        
+        document.getElementById('round-indicator').innerText = `Ronda ${currentRound} de ${MAX_ROUNDS}`;
+        document.getElementById('scenario-title').innerText = scenario.title;
+        document.getElementById('scenario-context').innerHTML = `<strong>Situación:</strong> ${scenario.context}`;
+
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        scenario.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.onclick = () => selectOption(opt);
+            btn.innerHTML = `<strong>${opt.title}</strong><span style="font-size: 0.95rem; color: #cbd5e1;">${opt.desc}</span>`;
+            container.appendChild(btn);
+        });
+
+        document.getElementById('screen-processing').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        
+        timerValue = TIME_LIMIT;
+        updateTimerUI();
+        
+        timerInterval = setInterval(() => {
+            timerValue--;
+            updateTimerUI();
+            if (timerValue <= 0) {
+                clearInterval(timerInterval);
+                selectOption(null);
+            }
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        const percentage = (timerValue / TIME_LIMIT) * 100;
+        const bar = document.getElementById('timer-bar');
+        document.getElementById('timer-text').innerText = timerValue + 's';
+        bar.style.width = percentage + '%';
+        bar.style.backgroundColor = timerValue <= 15 ? 'var(--ia-color)' : 'var(--human-color)';
+        bar.style.boxShadow = `0 0 15px ${timerValue <= 15 ? 'var(--ia-color)' : 'var(--human-color)'}`;
+    }
+
+    function selectOption(humanOpt) {
+        clearInterval(timerInterval);
+        
+        const timeTaken = TIME_LIMIT - timerValue;
+        let scenario = selectedScenarios[currentRound - 1];
+        
+        const iaChoice = scenario.options.reduce((p, c) => (p.finance > c.finance) ? p : c);
+        
+        if (!humanOpt) {
+            humanOpt = { title: "Timeout", desc: "No decidió a tiempo.", finance: 0, climate: 0, isBalanced: false };
+        }
+
+        userChoices.push(humanOpt);
+        iaChoices.push(iaChoice);
+        userTimes.push(timeTaken);
+
+        document.getElementById('screen-game').classList.add('hidden');
+        document.getElementById('screen-processing').classList.remove('hidden');
+
+        setTimeout(() => {
+            if (currentRound < MAX_ROUNDS) {
+                currentRound++;
+                loadRound();
+            } else {
+                showFinalResults();
+            }
+        }, 2000);
+    }
+
+    function showFinalResults() {
+        document.getElementById('screen-processing').classList.add('hidden');
+        document.getElementById('screen-results').classList.remove('hidden');
+
+        const avgUserFinance = Math.round((userChoices[0].finance + userChoices[1].finance) / 2);
+        const avgUserClimate = Math.round((userChoices[0].climate + userChoices[1].climate) / 2);
+        const avgIaFinance = Math.round((iaChoices[0].finance + iaChoices[1].finance) / 2);
+        const avgIaClimate = Math.round((iaChoices[0].climate + iaChoices[1].climate) / 2);
+
+        let feedbackHTML = "";
+        if (avgUserClimate >= 75 && avgUserFinance >= 45) {
+            feedbackHTML = `<strong>🌟 Excelente Liderazgo Organizacional:</strong> Lograste un equilibrio excepcional. Mantuviste la empresa a flote financieramente sin sacrificar la ética ni el tejido social. Comprendés la complejidad humana más allá de los números fríos.`;
+        } else if (avgUserFinance >= 75 && avgUserClimate < 45) {
+            feedbackHTML = `<strong>⚠️ Alerta de Sesgo Algorítmico:</strong> Tu patrón de decisiones es igual al de la IA. Te enfocaste en rentabilidad inmediata dejando un rastro de destrucción social y ética. En el mundo real, esto genera crisis de reputación.`;
+        } else if (avgUserClimate >= 60 && avgUserFinance <= 30) {
+            feedbackHTML = `<strong>📉 Riesgo Financiero Severo:</strong> Alta sensibilidad social, pero descuidaste la salud financiera. Las buenas intenciones sin viabilidad económica llevan a la quiebra. Faltó pragmatismo.`;
+        } else {
+            feedbackHTML = `<strong>⚖️ Gestión Inestable:</strong> Desempeño errático. Tus decisiones fueron contradictorias o paralizantes, resultando en un escenario inestable tanto financiera como socialmente.`;
+        }
+
+        document.getElementById('qualitative-feedback').innerHTML = feedbackHTML;
+
+        setTimeout(() => {
+            document.getElementById('human-finance-val').innerText = avgUserFinance + '%';
+            document.getElementById('human-climate-val').innerText = avgUserClimate + '%';
+            document.getElementById('human-finance-bar').style.width = avgUserFinance + '%';
+            document.getElementById('human-climate-bar').style.width = avgUserClimate + '%';
+
+            document.getElementById('ia-finance-val').innerText = avgIaFinance + '%';
+            document.getElementById('ia-climate-val').innerText = avgIaClimate + '%';
+            document.getElementById('ia-finance-bar').style.width = avgIaFinance + '%';
+            document.getElementById('ia-climate-bar').style.width = avgIaClimate + '%';
+        }, 100);
+
+        saveToDatabase(avgUserFinance, avgUserClimate);
+    }
+
+    function saveToDatabase(avgFinance, avgClimate) {
+        const record = {
+            fecha: new Date().toLocaleString(),
+            jugador: currentPlayer,
+            escenario_1: selectedScenarios[0].title,
+            decision_1: userChoices[0].title,
+            tiempo_1: userTimes[0] + "s",
+            escenario_2: selectedScenarios[1].title,
+            decision_2: userChoices[1].title,
+            tiempo_2: userTimes[1] + "s",
+            promedio_financiero: avgFinance + "%",
+            promedio_clima_social: avgClimate + "%"
+        };
+
+        const db = JSON.parse(localStorage.getItem('feria_resultados_v4')) || [];
+        db.push(record);
+        localStorage.setItem('feria_resultados_v4', JSON.stringify(db));
+    }
+
+    function resetGame() {
+        document.getElementById('player-name').value = '';
+        document.querySelectorAll('.metric-bar-fill').forEach(b => b.style.width = '0%');
+        document.getElementById('screen-results').classList.add('hidden');
+        document.getElementById('screen-intro').classList.remove('hidden');
+    }
+
+    function exportData() {
+        const db = JSON.parse(localStorage.getItem('feria_resultados_v4')) || [];
+        if (db.length === 0) {
+            alert("No hay partidas registradas todavía.");
+            return;
+        }
+
+        const headers = ["Fecha", "Jugador", "Escenario 1", "Decisión 1", "Tiempo 1", "Escenario 2", "Decisión 2", "Tiempo 2", "Eficiencia Financiera", "Clima Social/Ético"];
+        const csvRows = ['\uFEFF' + headers.join(',')];
+
+        db.forEach(row => {
+            const values = [
+                `"${row.fecha}"`, `"${row.jugador}"`, `"${row.escenario_1}"`, `"${row.decision_1}"`, `"${row.tiempo_1}"`,
+                `"${row.escenario_2}"`, `"${row.decision_2}"`, `"${row.tiempo_2}"`, `"${row.promedio_financiero}"`, `"${row.promedio_clima_social}"`
+            ];
+            csvRows.push(values.join(','));
+        });
+
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "Resultados_Feria_UNLP_v4.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
